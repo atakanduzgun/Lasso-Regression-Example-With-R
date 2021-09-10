@@ -1,0 +1,145 @@
+---
+title: "Lasso Regression"
+author: 
+date: 
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(glmnet)
+```
+<br>
+
+```{r}
+set.seed(120)
+
+n <- 250
+p <- 500
+real_p <- 15
+x <- matrix(rnorm(n*p),nrow=n,ncol=p)
+y <- apply(x[,1:real_p],1,sum) + rnorm(n)
+
+
+x.train <- x[1:200,]
+x.test <- x[201:250,]
+
+y.train <- y[1:200]
+y.test <- y[201:250]
+
+
+
+```
+<br>
+<br>
+
+### First, let's determine the optimal lambda value.
+<br>
+<br>
+
+## Optimum Lambdas For Lasso
+
+<br>
+
+
+
+```{r}
+lambdas_lasso <- 10^seq(0,-3,by=-.1)
+cvglm <- cv.glmnet(x.train, y.train, alpha=1, lambda=lambdas_lasso)
+optlambda_lassp <- cvglm$lambda.min
+cvglm
+```
+ <br>
+ 
+### Min Lamda Value is 0.07943 , Index = 12
+
+<br>
+<br>
+
+```{r}
+
+plot(cvglm)
+
+```
+
+<br>
+<br>
+
+### Now let's set up our lasso model using this optimal lambda value.
+
+<br>
+<br>
+
+## LASSO REGRESSION MODEL
+
+<br>
+<br>
+
+```{r}
+
+fit.lasso <- glmnet(x.train, y.train, lambda=optlambda_lassp, alpha = 1 )
+head(coef(fit.lasso),30)
+```
+
+<br>
+<br>
+
+### As can be seen, the coefficients of the variables after the 16th variable are zeroed. In other words, the model was established with 16 variables (with intercept). Now let's examine the performance of our model on the test set of our test data.
+
+<br>
+<br>
+
+## R2 Function
+
+```{r}
+rsquare <- function(true,predicted)
+{
+sse <- sum((predicted-true)^2)
+sst<- sum((true-mean(true))^2)
+rsq <- 1-sse/sst
+rsq }
+
+```
+
+<br>
+<br>
+
+
+## RMSE Function
+
+```{r}
+rmse <- function(true,predicted,n)
+{
+  sqrt(sum((true-predicted)^2)/(n-1))
+}
+```
+
+<br>
+<br>
+
+
+
+## Let's Examine The Prediction Performance of The Model On Our Test Set With R2
+
+
+```{r}
+
+y_predicted_lasso <- predict(fit.lasso, s=optlambda_lassp, newx = as.matrix(x.test))
+rlasso <- rsquare(y.test,y_predicted_lasso)
+rlasso
+
+```
+### 0.93 is strong value for R2 value, Prediction Performance of The Model On Our Test Set With R2 at safe level.
+
+## RMSE Values
+
+```{r}
+
+rmselasso <- rmse(y.test,y_predicted_lasso,50)
+rmselasso 
+```
+
+### It's has 1.102849 RMSE Score.
